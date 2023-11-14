@@ -101,8 +101,9 @@ class HardNegativeMining(tf.keras.layers.Layer):
     # For each query, get the indices of the logits which have the highest
     # k + 1 logit values, including the highest k negative logits and one true
     # logit.
+    scores = tf.random.uniform(shape=tf.shape(logits))   
     _, col_indices = tf.nn.top_k(
-        logits + labels * MAX_FLOAT, k=num_sampled, sorted=False)
+        scores + labels * MAX_FLOAT, k=num_sampled, sorted=False)
 
     # Gather sampled logits and corresponding labels.
     logits = _gather_elements_along_row(logits, col_indices)
