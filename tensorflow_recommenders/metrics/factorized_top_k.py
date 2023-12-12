@@ -58,7 +58,7 @@ class FactorizedTopK(Factorized):
 
   def __init__(
       self,
-      candidates: Union[layers.factorized_top_k.TopK, tf.data.Dataset],
+      candidates: Union[layers.factorized_top_k.TopK, tf.data.Dataset, None] = None,
       ks: Sequence[int] = (1, 5, 10, 50, 100),
       name: str = "factorized_top_k",
   ) -> None:
@@ -94,6 +94,7 @@ class FactorizedTopK(Factorized):
       true_candidate_embeddings: tf.Tensor,
       true_candidate_ids: Optional[tf.Tensor] = None,
       sample_weight: Optional[tf.Tensor] = None,
+      candidates: Union[tf.data.Dataset, None] = None
   ) -> tf.Operation:
     """Updates the metrics.
 
@@ -121,10 +122,13 @@ class FactorizedTopK(Factorized):
     Returns:
       Update op. Only used in graph mode.
     """
-
-    if true_candidate_ids is None and not self._candidates.is_exact():
+    if candidates is None:
+      candidates = self._candidates
+      
+    
+    if true_candidate_ids is None and not candidates.is_exact():
       raise ValueError(
-          f"The candidate generation layer ({self._candidates}) does not return "
+          f"The candidate generation layer ({candidates}) does not return "
           "exact results. To perform evaluation using that layer, you must "
           "supply `true_candidate_ids`, which will be checked against "
           "the candidate ids returned from the candidate generation layer."
@@ -133,7 +137,7 @@ class FactorizedTopK(Factorized):
     positive_scores = tf.reduce_sum(
         query_embeddings * true_candidate_embeddings, axis=1, keepdims=True)
 
-    top_k_predictions, retrieved_ids = self._candidates(
+    top_k_predictions, retrieved_ids = candidates(
         query_embeddings, k=max(self._ks))
 
     update_ops = []
